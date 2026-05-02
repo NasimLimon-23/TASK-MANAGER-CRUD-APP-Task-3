@@ -23,6 +23,54 @@ body {
 header {
   text-align: center;
   margin-bottom: 24px;
+  position: relative;
+}
+
+.auth-status {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-section {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 20px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.tab.active {
+  border-bottom-color: #2563eb;
+  color: #2563eb;
+}
+
+.auth-form h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
 }
 
 h1 {
