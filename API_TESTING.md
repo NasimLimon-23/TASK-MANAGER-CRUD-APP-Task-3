@@ -21,8 +21,8 @@ This document provides examples for testing all endpoints of the Profile-based T
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "john_doe",
-    "email": "john@example.com",
+    "username": "newuser",
+    "email": "newuser@example.com", 
     "password": "password123"
   }'
 ```
@@ -54,7 +54,7 @@ curl -X POST http://localhost:3000/auth/register \
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "john_doe",
+    "username": "newuser",
     "password": "password123"
   }'
 ```
@@ -87,11 +87,11 @@ curl -X POST http://localhost:3000/auth/login \
 ```bash
 curl -X POST http://localhost:3000/api/tasks \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
   -d '{
-    "title": "Complete project setup",
-    "description": "Install dependencies and configure database",
-    "status": "In Progress"
+    "title": "My First Task",
+    "description": "This is a test task",
+    "status": "To Do"
   }'
 ```
 
@@ -115,7 +115,7 @@ curl -X POST http://localhost:3000/api/tasks \
 **Request**:
 ```bash
 curl -X GET http://localhost:3000/api/tasks \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 ```
 
 **Response (200)**:
@@ -142,22 +142,18 @@ curl -X GET http://localhost:3000/api/tasks \
 
 **Examples**:
 
-Filter by status:
-```bash
-curl -X GET "http://localhost:3000/api/tasks?status=Completed" \
-  -H "Authorization: Bearer <token>"
 ```
+# Search by title
+curl "http://localhost:3000/api/tasks?search=First" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 
-Search tasks:
-```bash
-curl -X GET "http://localhost:3000/api/tasks?search=project" \
-  -H "Authorization: Bearer <token>"
-```
+# Filter by status
+curl "http://localhost:3000/api/tasks?status=To%20Do" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 
-Sort by title:
-```bash
-curl -X GET "http://localhost:3000/api/tasks?sort=title" \
-  -H "Authorization: Bearer <token>"
+# Sort by title
+curl "http://localhost:3000/api/tasks?sort=title" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 ```
 
 Combined filters:
@@ -204,11 +200,11 @@ curl -X GET http://localhost:3000/api/tasks/1 \
 ```bash
 curl -X PUT http://localhost:3000/api/tasks/1 \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
   -d '{
-    "title": "Complete project setup - Updated",
-    "description": "Install dependencies and configure database - Done",
-    "status": "Completed"
+    "title": "Updated Task Title",
+    "description": "Updated description",
+    "status": "In Progress"
   }'
 ```
 
@@ -231,7 +227,7 @@ curl -X PUT http://localhost:3000/api/tasks/1 \
 **Request**:
 ```bash
 curl -X DELETE http://localhost:3000/api/tasks/1 \
-  -H "Authorization: Bearer <token>"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
 ```
 
 **Success Response (204)**:
