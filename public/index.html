@@ -15,6 +15,9 @@
         <span id="user-info"></span>
         <button id="logout-button" class="secondary small hidden">Logout</button>
       </div>
+      <div id="security-notice" class="security-notice" style="color: #dc2626; font-size: 14px; margin-top: 8px; display: none;">
+        ⚠️ Each user sees only their own tasks. Make sure to logout before switching users.
+      </div>
     </header>
 
     <section id="auth-section" class="auth-section">
@@ -164,6 +167,19 @@
     let currentUser = null;
     let token = localStorage.getItem('token');
 
+    // Enhanced token validation
+    function isTokenValid(token) {
+      if (!token) return false;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const now = Math.floor(Date.now() / 1000);
+        return payload.exp > now;
+      } catch (e) {
+        console.warn('Invalid token format');
+        return false;
+      }
+    }
+
     // Auth functions
     function showAuthSection() {
       authSection.classList.remove('hidden');
@@ -176,29 +192,44 @@
     }
 
     function updateAuthStatus() {
+      const securityNotice = document.getElementById('security-notice');
       if (currentUser) {
         userInfo.textContent = `Welcome, ${currentUser.username}!`;
         logoutButton.classList.remove('hidden');
+        securityNotice.style.display = 'block';
         showTasksSection();
+        console.log('👤 User authenticated:', currentUser.username);
       } else {
         userInfo.textContent = '';
         logoutButton.classList.add('hidden');
+        securityNotice.style.display = 'none';
         showAuthSection();
+        console.log('🔒 No user authenticated');
       }
     }
 
     function logout() {
+      console.log('🔐 Logging out user:', currentUser);
       currentUser = null;
       token = null;
       localStorage.removeItem('token');
-      updateAuthStatus();
+      localStorage.removeItem('currentUser');
+      // Clear any cached data
+      tasksBody.innerHTML = '';
+      taskCount.textContent = '';
+      feedback.textContent = '';
       resetForm();
+      console.log('✅ Logout complete');
+      updateAuthStatus();
     }
 
     async function handleAuthSubmit(event, endpoint) {
       event.preventDefault();
+      console.log(`Attempting ${endpoint}...`);
+      
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData);
+      console.log(`Form data:`, data);
 
       try {
         const response = await fetch(`/auth/${endpoint}`, {
@@ -207,20 +238,44 @@
           body: JSON.stringify(data),
         });
 
-        const result = await response.json();
+        console.log(`Response status: ${response.status}`);
+        console.log(`Response headers:`, response.headers.get('content-type'));
+        
+        // Read response as text first to check if it's valid
+        const responseText = await response.text();
+        console.log(`Response text:`, responseText);
+        
+        // Try to parse JSON
+        let result;
+        try {
+          result = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('JSON parse error:', parseError);
+          console.error('Invalid JSON received:', responseText.substring(0, 200));
+          showFeedback('Server returned invalid data. Check console.', 'error');
+          return;
+        }
+        
+        console.log(`Response data:`, result);
+        
         if (!response.ok) {
-          showFeedback(result.error || (result.errors && result.errors.join(' ')) || 'Authentication failed.', 'error');
+          const errorMsg = result.error || (result.errors && result.errors.join(' ')) || 'Authentication failed.';
+          console.error(`Auth error: ${errorMsg}`);
+          showFeedback(errorMsg, 'error');
           return;
         }
 
         token = result.token;
         currentUser = result.user;
         localStorage.setItem('token', token);
+        localStorage.setItem('currentUser', JSON.stringify(result.user));
+        console.log(`${endpoint} successful! User:`, currentUser);
         updateAuthStatus();
         loadTasks();
         showFeedback(`Successfully ${endpoint === 'login' ? 'logged in' : 'registered'}!`);
       } catch (error) {
-        showFeedback('Unable to reach the server.', 'error');
+        console.error('Auth error:', error);
+        showFeedback('Server error: ' + error.message, 'error');
       }
     }
 
@@ -388,11 +443,31 @@
 
     function wireEvents() {
       // Auth events
-      loginTab.addEventListener('click', () => switchTab(loginTab, registerTab, loginForm, registerForm));
-      registerTab.addEventListener('click', () => switchTab(registerTab, loginTab, registerForm, loginForm));
-      loginForm.addEventListener('submit', (e) => handleAuthSubmit(e, 'login'));
-      registerForm.addEventListener('submit', (e) => handleAuthSubmit(e, 'register'));
-      logoutButton.addEventListener('click', logout);
+      console.log('Wiring auth events...');
+      loginTab.addEventListener('click', () => {
+        console.log('Login tab clicked');
+        switchTab(loginTab, registerTab, loginForm, registerForm);
+      });
+      
+      registerTab.addEventListener('click', () => {
+        console.log('Register tab clicked');
+        switchTab(registerTab, loginTab, registerForm, loginForm);
+      });
+      
+      loginForm.addEventListener('submit', (e) => {
+        console.log('Login form submitted');
+        handleAuthSubmit(e, 'login');
+      });
+      
+      registerForm.addEventListener('submit', (e) => {
+        console.log('Register form submitted');
+        handleAuthSubmit(e, 'register');
+      });
+      
+      logoutButton.addEventListener('click', () => {
+        console.log('Logout clicked');
+        logout();
+      });
 
       // Task events
       taskForm.addEventListener('submit', handleFormSubmit);
@@ -401,36 +476,55 @@
       filterStatus.addEventListener('change', loadTasks);
       sortSelect.addEventListener('change', loadTasks);
       cancelButton.addEventListener('click', resetForm);
+      console.log('✅ All events wired successfully');
     }
 
     // Initialize
     function init() {
+      console.log('🚀 Initializing Task Manager...');
       wireEvents();
-      if (token) {
-        // Validate token by making a test request
-        fetch('/api/tasks', { headers: getAuthHeaders() })
-          .then(response => {
-            if (response.ok) {
-              // Token is valid, decode user info (simplified)
-              const payload = JSON.parse(atob(token.split('.')[1]));
-              currentUser = { id: payload.id, username: payload.username, email: payload.email, role: payload.role };
-              updateAuthStatus();
-              loadTasks();
-            } else {
-              localStorage.removeItem('token');
-              updateAuthStatus();
-            }
-          })
-          .catch(() => {
-            localStorage.removeItem('token');
-            updateAuthStatus();
-          });
+      console.log('✅ Events wired');
+      
+      // Check for stored authentication
+      const storedToken = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('currentUser');
+      
+      if (storedToken && isTokenValid(storedToken)) {
+        console.log('🔐 Valid token found, restoring session...');
+        token = storedToken;
+        try {
+          currentUser = JSON.parse(storedUser);
+          console.log('✅ Session restored for user:', currentUser);
+          updateAuthStatus();
+          loadTasks();
+        } catch (e) {
+          console.warn('Invalid stored user data, clearing...');
+          logout();
+        }
       } else {
+        console.log('👤 No valid token found, showing auth forms');
+        if (storedToken) {
+          console.log('🗑️ Clearing expired token');
+          localStorage.removeItem('token');
+          localStorage.removeItem('currentUser');
+        }
         updateAuthStatus();
       }
     }
 
     init();
+    console.log('✅ Task Manager initialized');
+
+    // Debug function for testing user isolation
+    window.debugUserIsolation = function() {
+      console.log('🔍 User Isolation Debug Info:');
+      console.log('Current User:', currentUser);
+      console.log('Token:', token ? token.substring(0, 20) + '...' : 'None');
+      console.log('Auth Headers:', getAuthHeaders());
+      console.log('LocalStorage token:', localStorage.getItem('token') ? 'Present' : 'None');
+      console.log('LocalStorage user:', localStorage.getItem('currentUser'));
+      return { currentUser, token: token ? 'Present' : 'None', headers: getAuthHeaders() };
+    };
   </script>
 </body>
 </html>

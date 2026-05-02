@@ -227,7 +227,15 @@ curl -X PUT http://localhost:3000/api/tasks/1 \
 **Request**:
 ```bash
 curl -X DELETE http://localhost:3000/api/tasks/1 \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"  // Paste this in browser console
+  fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'testuser', password: 'password123' })
+  })
+  .then(r => r.json())
+  .then(d => console.log(d))
+  .catch(e => console.error(e))
 ```
 
 **Success Response (204)**:
@@ -536,3 +544,28 @@ curl -X POST http://localhost:3000/api/tasks \
 | Sort | ✅ Working | By id, title, or status |
 | Authentication | ✅ Working | JWT protection on all task routes |
 | User Isolation | ✅ Working | Each user sees only their tasks |
+
+// Register
+fetch('/auth/register', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username: 'testuser99',
+    email: 'test99@example.com',
+    password: 'password123'
+  })
+})
+.then(r => r.json())
+.then(d => {
+  console.log('✅ Register response:', d);
+  // Now try login
+  return fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: 'testuser99',
+      password: 'password123'
+    })
+  }).then(r => r.json()).then(d => console.log('✅ Login response:', d));
+})
+.catch(e => console.error('❌ Error:', e))
