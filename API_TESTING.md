@@ -569,3 +569,223 @@ fetch('/auth/register', {
   }).then(r => r.json()).then(d => console.log('✅ Login response:', d));
 })
 .catch(e => console.error('❌ Error:', e))
+
+## Complete Terminal Commands for API Testing
+
+This section provides all the curl commands needed to test the API end-to-end. Replace `YOUR_JWT_TOKEN_HERE` with your actual JWT token from login.
+
+### 1. Start the Server
+```bash
+npm start
+```
+
+### 2. Register a New User
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+### 3. Login and Get Token
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "password123"
+  }'
+```
+
+**Copy the `token` value from the response for use in subsequent requests.**
+
+### 4. Create a Task
+```bash
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "title": "My First Task",
+    "description": "This is a test task",
+    "status": "To Do"
+  }'
+```
+
+### 5. Get All Tasks
+```bash
+curl -X GET http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 6. Get Single Task (replace 1 with actual task ID)
+```bash
+curl -X GET http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 7. Search Tasks
+```bash
+curl -X GET "http://localhost:3000/api/tasks?search=task" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 8. Filter by Status
+```bash
+curl -X GET "http://localhost:3000/api/tasks?status=To%20Do" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 9. Sort Tasks
+```bash
+curl -X GET "http://localhost:3000/api/tasks?sort=title" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 10. Combined Filters
+```bash
+curl -X GET "http://localhost:3000/api/tasks?status=To%20Do&search=task&sort=title" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### 11. Update a Task (replace 1 with actual task ID)
+```bash
+curl -X PUT http://localhost:3000/api/tasks/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "title": "Updated Task Title",
+    "description": "Updated description",
+    "status": "In Progress"
+  }'
+```
+
+### 12. Delete a Task (replace 1 with actual task ID)
+```bash
+curl -X DELETE http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+### Error Testing Commands
+
+#### Try Access Without Token
+```bash
+curl -X GET http://localhost:3000/api/tasks
+```
+**Expected**: `{"error":"Access token required."}`
+
+#### Try With Invalid Token
+```bash
+curl -X GET http://localhost:3000/api/tasks \
+  -H "Authorization: Bearer invalid_token_here"
+```
+**Expected**: `{"error":"Invalid or expired token."}`
+
+#### Try Access Task of Another User
+```bash
+# First, create a task with User A, then try to access it with User B's token
+curl -X GET http://localhost:3000/api/tasks/1 \
+  -H "Authorization: Bearer user_b_token_here"
+```
+**Expected**: `{"error":"Task not found."}`
+
+#### Invalid Registration Data
+```bash
+# Missing email
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "password123"
+  }'
+```
+**Expected**: `{"errors":["Valid email is required."]}`
+
+#### Duplicate Registration
+```bash
+# Try to register same username twice
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+**Expected**: `{"error":"Username or email already exists."}`
+
+#### Short Password
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "newuser",
+    "email": "new@example.com",
+    "password": "123"
+  }'
+```
+**Expected**: `{"errors":["Password must be at least 6 characters long."]}`
+
+#### Invalid Task Title
+```bash
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "title": "",
+    "status": "To Do"
+  }'
+```
+**Expected**: `{"errors":["Title is required and must be a non-empty string."]}`
+
+#### Invalid Status Value
+```bash
+curl -X POST http://localhost:3000/api/tasks \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "title": "My Task",
+    "status": "Invalid Status"
+  }'
+```
+**Expected**: `{"errors":["Status must be one of: To Do, In Progress, Completed."]}`
+
+## Testing Workflow Summary
+
+1. **Start Server**: `npm start`
+2. **Register User**: Use register endpoint
+3. **Login**: Get JWT token
+4. **Create Task**: Test task creation
+5. **List Tasks**: Verify task retrieval
+6. **Update Task**: Test task updates
+7. **Delete Task**: Test task deletion
+8. **Test Filters**: Search, filter, sort
+9. **Test Errors**: Try invalid requests
+
+## Frontend Testing
+
+1. Open `http://localhost:3000` in browser
+2. Test registration form
+3. Test login form
+4. Test task creation, editing, deletion
+5. Test search and filtering
+6. Test logout functionality
+
+## Summary of Test Results
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Registration | ✅ Working | Valid email, unique username/email required |
+| User Login | ✅ Working | Returns JWT token valid for 24 hours |
+| Task Creation | ✅ Working | Requires authentication, user-specific |
+| Task Read (All) | ✅ Working | Returns user's tasks only |
+| Task Read (Single) | ✅ Working | Task must belong to authenticated user |
+| Task Update | ✅ Working | Only owner can update |
+| Task Delete | ✅ Working | Only owner can delete |
+| Search | ✅ Working | Searches title and description |
+| Filter by Status | ✅ Working | To Do, In Progress, Completed |
+| Sort | ✅ Working | By id, title, or status |
+| Authentication | ✅ Working | JWT protection on all task routes |
+| User Isolation | ✅ Working | Each user sees only their tasks |

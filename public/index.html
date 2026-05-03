@@ -288,7 +288,8 @@
 
     // Task functions
     function getAuthHeaders() {
-      return token ? { 'Authorization': `Bearer ${token}` } : {};
+      const currentToken = token || localStorage.getItem('token');
+      return currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {};
     }
 
     async function fetchTasks() {
@@ -300,6 +301,16 @@
       const response = await fetch(`/api/tasks?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          logout();
+          showFeedback('Session expired. Please log in again.', 'error');
+          return [];
+        }
+        throw new Error('Failed to fetch tasks.');
+      }
+
       return response.json();
     }
 
@@ -352,6 +363,10 @@
 
     async function handleFormSubmit(event) {
       event.preventDefault();
+      if (!token) {
+        showFeedback('Please log in before creating or updating tasks.', 'error');
+        return;
+      }
       const payload = {
         title: titleInput.value.trim(),
         description: descriptionInput.value.trim(),
@@ -372,11 +387,16 @@
 
         const result = await response.json();
         if (!response.ok) {
+          if (response.status === 401) {
+            logout();
+            showFeedback('Unauthorized. Please log in again.', 'error');
+            return;
+          }
           showFeedback(result.error || (result.errors && result.errors.join(' ')) || 'Unable to save task.', 'error');
           return;
         }
 
-        resetF
+        resetForm();
         loadTasks();
         showFeedback(currentEditId ? 'Task updated successfully.' : 'Task created successfully.');
       } catch (error) {
@@ -396,6 +416,13 @@
     async function handleTaskAction(event) {
       const button = event.target.closest('button');
       if (!button) return;
+      if (!token) {
+        token = localStorage.getItem('token');
+      }
+      if (!token) {
+        showFeedback('Please log in to manage tasks.', 'error');
+        return;
+      }
 
       const id = button.dataset.id;
       const action = button.dataset.action;
@@ -410,6 +437,9 @@
           if (response.ok) {
             showFeedback('Task deleted.');
             loadTasks();
+          } else if (response.status === 401) {
+            logout();
+            showFeedback('Unauthorized. Please log in again.', 'error');
           } else {
             showFeedback('Failed to delete task.', 'error');
           }
@@ -424,6 +454,11 @@
             headers: getAuthHeaders(),
           });
           if (!response.ok) {
+            if (response.status === 401) {
+              logout();
+              showFeedback('Unauthorized. Please log in again.', 'error');
+              return;
+            }
             showFeedback('Unable to load task for editing.', 'error');
             return;
           }
