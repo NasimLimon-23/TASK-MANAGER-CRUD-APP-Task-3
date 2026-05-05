@@ -168,8 +168,6 @@ mysql -u root -p task_manager < backup_task_manager.sql
 ### Issue: "Error: connect ECONNREFUSED"
 **Solution**: MySQL not running
 ```bash
-# macOS
-brew services start mysql
 
 # Ubuntu/Linux
 sudo systemctl start mysql
@@ -221,9 +219,7 @@ npm start  # Logs to console
 ```
 
 ### Test API Endpoints
-```bash
-# Postman, Insomnia, or Thunder Client recommended
-# Or use curl as shown in API_TESTING.md
+``` using bash
 ```
 
 ## Security Best Practices
@@ -237,26 +233,6 @@ npm start  # Logs to console
 7. **Rate Limiting**: Implement for authentication endpoints
 8. **Logging**: Monitor for suspicious activity
 
-## Scaling Considerations
-
-### Database Optimization
-- Add indexes on frequently queried columns
-- Archive old tasks after specified period
-- Consider denormalization for read-heavy operations
-
-### Application Server
-- Use process manager (PM2) for clustering
-- Load balance multiple instances
-- Cache tokens with Redis
-
-### Example PM2 Setup
-```bash
-npm install -g pm2
-pm2 start app.js -i max
-pm2 logs
-pm2 save
-pm2 startup
-```
 
 ## Version Control
 
